@@ -12,6 +12,26 @@ end
 
 if SERVER then
     AddCSLuaFile()
+    FACTORY_GLOBAL_ZONES = FACTORY_GLOBAL_ZONES or {}
+
+    local savedConfig = util.JSONToTable(file.Read("factory_global_config.txt", "DATA") or "")
+    if istable(savedConfig) then
+        FACTORY_CONFIG.DeskIncome = tonumber(savedConfig.DeskIncome) or FACTORY_CONFIG.DeskIncome
+        FACTORY_CONFIG.DevicePrice = tonumber(savedConfig.DevicePrice) or FACTORY_CONFIG.DevicePrice
+        FACTORY_CONFIG.CrippleCoef = tonumber(savedConfig.CrippleCoef) or FACTORY_CONFIG.CrippleCoef
+        FACTORY_CONFIG.BoostCoef = tonumber(savedConfig.BoostCoef) or FACTORY_CONFIG.BoostCoef
+        FACTORY_CONFIG.TerminalCooldown = tonumber(savedConfig.TerminalCooldown) or FACTORY_CONFIG.TerminalCooldown
+    end
+
+    local function SyncFactoryEconomyGlobals()
+        SetGlobalInt("Factory_DeskIncome", math.Round(FACTORY_CONFIG.DeskIncome or 1000))
+        SetGlobalFloat("Factory_CrippleCoef", FACTORY_CONFIG.CrippleCoef or 0.5)
+        SetGlobalFloat("Factory_BoostCoef", FACTORY_CONFIG.BoostCoef or 2)
+    end
+
+    SyncFactoryEconomyGlobals()
+    SetGlobalInt("Factory_AssemblyPayoutStatus", FACTORY_GLOBAL_STATUS or 0)
+
     util.AddNetworkString("Factory_Admin_SaveConfig")
     util.AddNetworkString("Factory_Admin_SaveMapAction")
     util.AddNetworkString("Factory_Admin_ClearMapAction")
@@ -115,6 +135,7 @@ if SERVER then
         timer.Remove("Factory_Admin_Highlight_Timeout")
         
         FACTORY_GLOBAL_STATUS = FACTORY_STATUS_NORMAL
+        SetGlobalInt("Factory_AssemblyPayoutStatus", FACTORY_GLOBAL_STATUS)
         SetGlobalBool("Factory_IsRobberyActive", false)
         SetGlobalInt("Factory_Countdown", 0)
         file.Delete("factory_system_save.txt")
@@ -131,7 +152,9 @@ if SERVER then
         FACTORY_CONFIG.DevicePrice = net.ReadInt(32)
         FACTORY_CONFIG.CrippleCoef = net.ReadFloat()
         FACTORY_CONFIG.BoostCoef = net.ReadFloat()
+        FACTORY_CONFIG.TerminalCooldown = net.ReadFloat()
         file.Write("factory_global_config.txt", util.TableToJSON(FACTORY_CONFIG))
+        SyncFactoryEconomyGlobals()
     end)
 end
 
@@ -142,16 +165,35 @@ if CLIENT then
             panel:ClearControls()
             panel:AddControl("Header", { Text = "Управление Заводом", Description = "Панель Суперадмина" })
 
-            local income = panel:TextEntry("Оплата за сборку ПК ($)", "DermaDefault")
-            income:SetText(FACTORY_CONFIG.DeskIncome or 1000)
-            local price = panel:TextEntry("Цена передатчика у NPC ($)", "DermaDefault")
-            price:SetText(FACTORY_CONFIG.DevicePrice or 25000)
-            local cripple = panel:TextEntry("Коэффициент при удачном взломе", "DermaDefault")
-            cripple:SetText(FACTORY_CONFIG.CrippleCoef or 0.5)
-            local boost = panel:TextEntry("Коэффициент при защите копами", "DermaDefault")
-            boost:SetText(FACTORY_CONFIG.BoostCoef or 2.0)
-            local cooldown = panel:TextEntry("Блокировка терминала после налёта (Минуты)", "DermaDefault")
-            cooldown:SetText(FACTORY_CONFIG.TerminalCooldown or 20)
+            local function AddCompactTextEntry(label, value)
+                -- DForm:TextEntry растягивает поле при своей раскладке, поэтому
+                -- используем отдельную строку с фиксированной шириной поля.
+                local row = vgui.Create("DPanel")
+                row:SetTall(22)
+                row.Paint = nil
+
+                local caption = vgui.Create("DLabel", row)
+                caption:Dock(LEFT)
+                caption:SetWide(190)
+                caption:SetFont("DermaDefault")
+                caption:SetTextColor(Color(0, 0, 0))
+                caption:SetText(label)
+                caption:SetContentAlignment(4)
+
+                local entry = vgui.Create("DTextEntry", row)
+                entry:Dock(RIGHT)
+                entry:SetWide(85)
+                entry:SetFont("DermaDefault")
+                entry:SetText(value)
+                panel:AddItem(row)
+                return entry
+            end
+
+            local income = AddCompactTextEntry("ОПЛАТА ЗА СБОРКУ($)", FACTORY_CONFIG.DeskIncome or 1000)
+            local price = AddCompactTextEntry("ЦЕНА ПЕРЕДАТЧИКА ($)", FACTORY_CONFIG.DevicePrice or 25000)
+            local cripple = AddCompactTextEntry("-$ БАНДИТЫ 1=100%", FACTORY_CONFIG.CrippleCoef or 0.5)
+            local boost = AddCompactTextEntry("+$ ПОЛИЦЕЙСКИЕ 1=100%", FACTORY_CONFIG.BoostCoef or 2.0)
+            local cooldown = AddCompactTextEntry("БЛОКИРОВКА ТЕРМИНАЛА (мин)", FACTORY_CONFIG.TerminalCooldown or 20)
 
             panel:Button("Сохранить настройки экономики").DoClick = function()
                 net.Start("Factory_Admin_SaveConfig")
@@ -159,7 +201,7 @@ if CLIENT then
                 net.WriteInt(tonumber(price:GetText()) or 25000, 32)
                 net.WriteFloat(tonumber(cripple:GetText()) or 0.5)
                 net.WriteFloat(tonumber(boost:GetText()) or 2.0)
-                FACTORY_CONFIG.TerminalCooldown = tonumber(cooldown:GetText()) or 20
+                net.WriteFloat(tonumber(cooldown:GetText()) or 20)
                 net.SendToServer()
             end
 

@@ -54,7 +54,12 @@ hook.Add("PostDrawTranslucentRenderables", "Factory_AssemblyDesk_GlobalRender", 
 
         cam.Start3D2D(panelPos, panelAng, 0.08)
             
-            if stage == 0 then
+            if stage == 5 or GetGlobalBool("Factory_IsRobberyActive", false) then
+                draw.RoundedBox(6, -200, -35, 400, 70, Color(192, 57, 43, 230))
+                draw.SimpleText("ЗАВОД ЗАБЛОКИРОВАН СИНДИКАТОМ!", "DermaDefaultBold", 0, -10, Color(255, 255, 255), TEXT_ALIGN_CENTER)
+                draw.SimpleText("Системы обесточены. Ожидайте зачистки склада полицией...", "DermaDefault", 0, 12, Color(255, 255, 255, 160), TEXT_ALIGN_CENTER)
+
+            elseif stage == 0 then
                 local boxW, boxH = 360, 70
                 local boxX, boxY = -(boxW / 2), -35
                 draw.RoundedBox(6, boxX, boxY, boxW, boxH, Color(46, 204, 113, 180))
@@ -64,15 +69,26 @@ hook.Add("PostDrawTranslucentRenderables", "Factory_AssemblyDesk_GlobalRender", 
             elseif IsValid(worker) then
                 
                 if worker == localPly then
-                    if stage == 5 or FACTORY_GLOBAL_STATUS == FACTORY_STATUS_HACKING then
+                    if stage == 5 or GetGlobalBool("Factory_IsRobberyActive", false) then
                     -- ЗАВОД ОБЕСТОЧЕН СИНДИКАТОМ
                     draw.RoundedBox(6, -200, -35, 400, 70, Color(192, 57, 43, 230)) -- Кроваво-красный фон Onyx
                     draw.SimpleText("ЗАВОД ЗАБЛОКИРОВАН СИНДИКАТОМ!", "DermaDefaultBold", 0, -10, Color(255, 255, 255), TEXT_ALIGN_CENTER)
                     draw.SimpleText("Системы обесточены. Ожидайте зачистки склада полицией...", "DermaDefault", 0, 12, Color(255, 255, 255, 160), TEXT_ALIGN_CENTER)
                     elseif stage == 4 then
+                        local baseIncome = GetGlobalInt("Factory_DeskIncome", 1000)
+                        local payoutStatus = GetGlobalInt("Factory_AssemblyPayoutStatus", 0)
+                        local multiplier = 1
+
+                        if payoutStatus == FACTORY_STATUS_CRIPPLED then
+                            multiplier = GetGlobalFloat("Factory_CrippleCoef", 0.5)
+                        elseif payoutStatus == FACTORY_STATUS_BOOSTED then
+                            multiplier = GetGlobalFloat("Factory_BoostCoef", 2)
+                        end
+
+                        local displayedReward = math.Round(baseIncome * multiplier)
                         draw.RoundedBox(6, -200, -35, 400, 70, Color(39, 174, 96, 220))
                         draw.SimpleText("КОМПЬЮТЕР ГОТОВ К СДАЧЕ!", "DermaDefaultBold", 0, -10, Color(255, 255, 255), TEXT_ALIGN_CENTER)
-                        draw.SimpleText("Зачисление 1000$ и подготовка нового корпуса...", "DermaDefault", 0, 12, Color(255, 255, 255, 180), TEXT_ALIGN_CENTER)
+                        draw.SimpleText("Зачисление " .. displayedReward .. "$ и подготовка нового корпуса...", "DermaDefault", 0, 12, Color(255, 255, 255, 180), TEXT_ALIGN_CENTER)
                     else
                         local shootPos = localPly:GetShootPos()
                         local aimVector = localPly:GetAimVector()

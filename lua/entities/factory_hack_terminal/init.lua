@@ -22,7 +22,6 @@ function ENT:Initialize()
     
     self:SetNWBool("Client_IsHacking", false)
     self:SetNWInt("CooldownEndTime", 0)
-    SetGlobalBool("Factory_IsRobberyActive", false)
 end
 
 function ENT:StartTerminalCooldown()
@@ -71,6 +70,7 @@ function ENT:AcceptInput(name, activator, caller)
             end
 
             FACTORY_GLOBAL_STATUS = FACTORY_STATUS_HACKING
+            SetGlobalInt("Factory_AssemblyPayoutStatus", FACTORY_GLOBAL_STATUS)
             self:SetNWBool("Client_IsHacking", true)
             SetGlobalBool("Factory_IsRobberyActive", true)
             activator:SetNWBool("Factory_HasTransponder", false)
@@ -122,6 +122,7 @@ function ENT:Think()
 
             if self.CopProgress >= 10 then
                 FACTORY_GLOBAL_STATUS = FACTORY_STATUS_BOOSTED
+                SetGlobalInt("Factory_AssemblyPayoutStatus", FACTORY_GLOBAL_STATUS)
                 self:SetNWBool("Client_IsHacking", false)
                 SetGlobalBool("Factory_IsRobberyActive", false)
                 self:StartTerminalCooldown()
@@ -129,7 +130,7 @@ function ENT:Think()
                 timer.Remove("Factory_Global_Robbery_Ticker")
 
                 for _, desk in ipairs(ents.FindByClass("factory_assembly_desk")) do
-                    if desk:GetAssemblyStage() == 5 then desk:SetAssemblyStage(1) end 
+                    if desk:GetAssemblyStage() == 5 then desk:ResetDesk() end
                 end
 
                 if IsValid(self.AttachedDevice) then self.AttachedDevice:Remove() end
@@ -157,7 +158,8 @@ function ENT:Think()
                 end
 
                 timer.Simple(300, function() 
-                    FACTORY_GLOBAL_STATUS = FACTORY_STATUS_NORMAL 
+                    FACTORY_GLOBAL_STATUS = FACTORY_STATUS_NORMAL
+                    SetGlobalInt("Factory_AssemblyPayoutStatus", FACTORY_GLOBAL_STATUS)
                 end)
             end
         else

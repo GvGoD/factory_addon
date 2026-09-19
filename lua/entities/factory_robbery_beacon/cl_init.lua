@@ -13,7 +13,7 @@ function ENT:Draw()
     local segments = 32
     local pos = self:GetPos() + Vector(0, 0, 4)
 
-    local isRobberyActive = (FACTORY_GLOBAL_STATUS == 1) -- Идет реальный налет
+    local isRobberyActive = GetGlobalBool("Factory_IsRobberyActive", false)
     local isHighlightActive = (FACTORY_BEACON_HIGHLIGHT_UNTIL and CurTime() < FACTORY_BEACON_HIGHLIGHT_UNTIL) -- Нажат ПКМ
 
     if isRobberyActive or isHighlightActive then

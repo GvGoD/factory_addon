@@ -1,6 +1,3 @@
-AddCSLuaFile("cl_init.lua")
-AddCSLuaFile("init.lua")
-
 ENT.Type = "anim"
 ENT.Base = "base_gmodentity"
 ENT.PrintName = "Сборочный Стол"

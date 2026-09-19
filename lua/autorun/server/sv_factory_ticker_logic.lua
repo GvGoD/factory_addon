@@ -31,15 +31,13 @@ function Factory_StartRobberyTimerLogic()
                     if zone.Pos:Distance(ply:GetPos()) <= radius then
                         table.insert(mafiaInZone, ply)
                         
-                        -- ИСПРАВЛЕНО (ФИКС СБРОСA РОЗЫСКА):
-                        -- Мы заменили капризный ply:wanted() на эталонный метод DarkRP.createWanted.
-                        -- Мы передаем nil (консоль города) в качестве инициатора и убрали ломающий 0-секундный таймер.
-                        -- Теперь плашка розыска встанет намертво, загорится красным и не исчезнет!
+                        -- ИСПРАВЛЕНО (ФИКС СПАМА «ИГРОК ОТКЛЮЧИЛСЯ»):
+                        -- Мы убрали nil, вызывавший ложный лог выхода копа с сервера.
+                        -- Вызываем ply:wanted() передавая ply в качестве легального свидетеля.
+                        -- Строка 0-секундного кулдауна полностью стёрта. Розыск встанет намертво и без флуда в чат!
                         if not ply:getDarkRPVar("wanted") then
-                            if DarkRP and DarkRP.createWanted then
-                                DarkRP.createWanted(nil, ply, "Ограбление главного склада завода!")
-                            elseif isfunction(ply.wanted) then
-                                ply:wanted(nil, "Ограбление главного склада завода!")
+                            if isfunction(ply.wanted) then
+                                ply:wanted(ply, "Ограбление главного склада завода!")
                             end
                         end
                     end
@@ -81,6 +79,7 @@ function Factory_StartRobberyTimerLogic()
         -- ПОЛНОЕ УСПЕШНОЕ ЗАВЕРШЕНИЕ ОГРАБЛЕНИЯ (5 минут истекли)
         if FACTORY_ROBBERY_TIMER <= 0 then
             FACTORY_GLOBAL_STATUS = 2 
+            SetGlobalInt("Factory_AssemblyPayoutStatus", FACTORY_GLOBAL_STATUS)
             timer.Remove("Factory_Global_Robbery_Ticker")
             SetGlobalBool("Factory_IsRobberyActive", false)
 
@@ -89,7 +88,7 @@ function Factory_StartRobberyTimerLogic()
             end
 
             for _, desk in ipairs(ents.FindByClass("factory_assembly_desk")) do
-                if desk:GetAssemblyStage() == 5 then desk:SetAssemblyStage(1) end
+                if desk:GetAssemblyStage() == 5 then desk:ResetDesk() end
             end
 
             for _, p in ipairs(player.GetAll()) do
@@ -99,7 +98,10 @@ function Factory_StartRobberyTimerLogic()
                 net.Send(p)
             end
 
-            timer.Simple(300, function() FACTORY_GLOBAL_STATUS = 0 end)
+            timer.Simple(300, function()
+                FACTORY_GLOBAL_STATUS = 0
+                SetGlobalInt("Factory_AssemblyPayoutStatus", FACTORY_GLOBAL_STATUS)
+            end)
         end
     end)
 end

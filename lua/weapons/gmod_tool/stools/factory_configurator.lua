@@ -29,6 +29,7 @@ if SERVER then
         local zoneID = tostring(math.Round(hitPos.x)) .. "_" .. tostring(math.Round(hitPos.y))
         
         -- ИСПРАВЛЕНО: Пишем параметры зоны в глобальный массив сервера для тикера выплат!
+        FACTORY_GLOBAL_ZONES = FACTORY_GLOBAL_ZONES or {}
         FACTORY_GLOBAL_ZONES[zoneID] = {
             Pos = hitPos,
             Radius = radius,

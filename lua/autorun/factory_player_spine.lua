@@ -16,6 +16,7 @@ hook.Add("PostPlayerDraw", "Factory_Render_SpineDevice", function(ply)
             SpineModels[modelIndex] = ClientsideModel("models/props_citizen_tech/transponder.mdl", RENDERGROUP_OPAQUE)
             if IsValid(SpineModels[modelIndex]) then
                 SpineModels[modelIndex]:SetNoDraw(true)
+                SpineModels[modelIndex]:SetModelScale(0.55, 0)
             end
         end
 
@@ -31,12 +32,17 @@ hook.Add("PostPlayerDraw", "Factory_Render_SpineDevice", function(ply)
         local bonePos = matrix:GetTranslation()
         local boneAng = matrix:GetAngles()
 
-        boneAng:RotateAroundAxis(boneAng:Forward(), 90)
-        boneAng:RotateAroundAxis(boneAng:Right(), 270)
-        local offset = boneAng:Forward() * -4 + boneAng:Up() * -2 + boneAng:Right() * -1
+        -- Смещаем устройство к лопаткам, а не к поясу. Смещение считаем до
+        -- поворота модели, чтобы оно всегда оставалось на спине игрока.
+        local offset = boneAng:Forward() * -7 + boneAng:Up() * 8
+
+        local transAng = Angle(boneAng)
+        transAng:RotateAroundAxis(transAng:Forward(), 90)
+        transAng:RotateAroundAxis(transAng:Right(), 270)
 
         trans:SetPos(bonePos + offset)
-        trans:SetAngles(boneAng)
+        trans:SetAngles(transAng)
+        trans:SetModelScale(0.55, 0)
         trans:SetupBones()
         trans:DrawModel()
     else
